@@ -1,17 +1,19 @@
-# Estágio 1: Build apontando para o caminho real do repositório
-FROM maven:3.9.6-eclipse-temurin-21 AS build
+# Etapa de construção
+FROM maven:3.8.1-jdk-11 AS builder
 WORKDIR /app
+
+# Copia todos os arquivos para o contêiner
 COPY . .
 
-# Entra na estrutura real de pastas do seu GitHub e compila
+# Muda para o diretório correto e constrói o projeto
 RUN cd data-anonymizer/data-anonymizer && mvn clean package -DskipTests
 
-# Estágio 2: Execução
-FROM eclipse-temurin:21-jre-jammy
+# Etapa de execução
+FROM openjdk:11-jre-slim
 WORKDIR /app
 
-# Copia o JAR direto do local correto
-COPY --from=build /app/data-anonymizer/data-anonymizer/target/*.jar app.jar
-EXPOSE 8080
+# Copia o arquivo JAR construído da etapa anterior
+COPY --from=builder /app/data-anonymizer/data-anonymizer/target/*.jar app.jar
 
-ENTRYPOINT ["java", "-XX:ActiveProcessorCount=1", "-Xmx300m", "-jar", "app.jar"]
+# Comando para executar a aplicação
+ENTRYPOINT ["java", "-jar", "app.jar"]
